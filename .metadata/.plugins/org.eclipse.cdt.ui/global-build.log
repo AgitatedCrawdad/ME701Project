@@ -1,0 +1,18 @@
+/usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o: In function `_start':
+(.text+0x20): undefined reference to `main'
+makefile:44: recipe for target 'twophase' failed
+collect2: error: ld returned 1 exit status
+make: *** [twophase] Error 1
+
+13:50:23 Build Failed. 3 errors, 0 warnings. (took 890ms)
+
+13:50:23 **** Incremental Build of configuration Debug for project twophase ****
+make all 
+Building target: twophase
+Invoking: GCC C++ Linker
+g++  -o "twophase"  ./mainfile.o   
+/usr/lib/gcc/x86_64-linux-gnu/7/../../../x86_64-linux-gnu/Scrt1.o: In function `_start':
+(.text+0x20): undefined reference to `main'
+makefile:44: recipe for target 'twophase' failed
+collect2: error: ld returned 1 exit status
+make: *** [twophase] Error 1

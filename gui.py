@@ -229,7 +229,7 @@ class MatplotlibCanvas(FigureCanvas) :
         # Initialize the figure and axes
         self.fig = Figure()
         self.axes = self.fig.add_subplot(221)
-        #what
+        
         # Give it some default plot (if desired).  
         x = np.arange(0.0, 3.0, 0.01)
         y = np.sin(2*np.pi*x)

@@ -1,15 +1,16 @@
 import sys
 import platform
 import numpy as np
-from temp import massflow
+from temp import massflow, walltemp
 #import matplotlib
 #matplotlib.use('Qt5Agg')
 
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QDialog, QLineEdit, 
                              QVBoxLayout, QAction, QMessageBox,QFileDialog,
                              QSizePolicy, QWidget, QComboBox, QInputDialog,
-                             QPushButton,QHBoxLayout,QLabel)
+                             QPushButton,QHBoxLayout,QLabel,)
 from PyQt5.QtCore import QT_VERSION_STR, PYQT_VERSION_STR
+from PyQt5.QtCore import Qt
 
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 from matplotlib.figure import Figure
@@ -56,8 +57,15 @@ class MainWindow(QMainWindow) :
         self.edit5 = QLineEdit("0")
         self.edit6 = QLineEdit("5")
         
+        self.edit7 = QLineEdit("0.7")
+        self.edit8 = QLineEdit("3")
+        
         self.runbutton = QPushButton("Run")
         self.cancelbutton = QPushButton("Clear")
+        hbox0 = QHBoxLayout()
+        label = QLabel("Mass Flow Rate Settings",self)
+        label.setAlignment(Qt.AlignCenter)
+        hbox0.addWidget(label)
         
         hbox1 = QHBoxLayout()
         label = QLabel("Inlet Temperature [C]:",self)
@@ -83,6 +91,20 @@ class MainWindow(QMainWindow) :
         hbox3.addWidget(label)
         hbox3.addWidget(self.edit6)
         
+        hbox4 = QHBoxLayout()
+        label = QLabel("Wall Temperature Settings",self)
+        label.setAlignment(Qt.AlignCenter)
+        hbox4.addWidget(label)       
+        
+        hbox5 = QHBoxLayout()
+        label = QLabel("Heated Length [m]:",self)
+        hbox5.addWidget(label)
+        hbox5.addWidget(self.edit7)
+        label = QLabel("Heat in [kW]:",self)
+        hbox5.addWidget(label)
+        hbox5.addWidget(self.edit8)
+        
+        
         hbox = QHBoxLayout()
         hbox.addWidget(self.runbutton)
 #        hbox.addWidget(self.cancelbutton)
@@ -103,10 +125,12 @@ class MainWindow(QMainWindow) :
 #        layout.addWidget(self.comboBox)
 #        layout.addWidget(self.edit1)
 #        layout.addWidget(self.edit2) 
-        
+        layout.addLayout(hbox0)
         layout.addLayout(hbox1)
         layout.addLayout(hbox2)
         layout.addLayout(hbox3)
+        layout.addLayout(hbox4)
+        layout.addLayout(hbox5)
         
         layout.addLayout(hbox)
         
@@ -150,6 +174,8 @@ class MainWindow(QMainWindow) :
         Area = float(self.edit4.text())
         q_in = float(self.edit5.text())
         q_out = float(self.edit6.text())
+        heated_length = float(self.edit7.text())
+        power_in = float(self.edit8.text())
 #        var = 'self.x='
 #        if span[0].isdigit():
 #            totalspan = var+'np.array(['+span+'])'
@@ -158,6 +184,11 @@ class MainWindow(QMainWindow) :
 #        
 #        exec(totalspan)
         self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
+        
+        fraction = int(((power_in-q_in)/(q_out-q_in))*1000)
+        
+        self.Twall, self.Tbulk, self.z = walltemp(q_in = power_in, z=heated_length, m_dot = self.y[fraction])
+        
 #        fun = str(self.comboBox.currentText())
       
 #        fun = fun.replace('x','self.x')
@@ -167,7 +198,7 @@ class MainWindow(QMainWindow) :
 #        y = x**2
 #        self.plot.draw()
         
-        self.plot.redraw(self.x,self.y)
+        self.plot.redraw(self.x,self.y, self.Twall, self.Tbulk, self.z)
 #        self.edit2.setText(str(self.y))
 
     def clear(self):
@@ -229,13 +260,13 @@ class MatplotlibCanvas(FigureCanvas) :
         # Initialize the figure and axes
         self.fig = Figure()
         self.axes = self.fig.add_subplot(221)
-        
+        self.axes2 = self.fig.add_subplot(222)
         # Give it some default plot (if desired).  
-        x = np.arange(0.0, 3.0, 0.01)
-        y = np.sin(2*np.pi*x)
-        self.axes.plot(x, y)
-        self.axes.set_xlabel('Heat Input [kW]')
-        self.axes.set_ylabel('Mass Flow Rate [kg/s]')   
+#        x = np.arange(0.0, 3.0, 0.01)
+#        y = np.sin(2*np.pi*x)
+#        self.axes.plot(x, y)
+#        self.axes.set_xlabel('Heat Input [kW]')
+#        self.axes.set_ylabel('Mass Flow Rate [kg/s]')   
         
         # Now do the initialization of the super class
         FigureCanvas.__init__(self, self.fig)
@@ -246,7 +277,7 @@ class MatplotlibCanvas(FigureCanvas) :
         FigureCanvas.updateGeometry(self)
          
         
-    def redraw(self, x, y) :
+    def redraw(self, x, y,Twall, Tbulk,z) :
         """ Redraw the figure with new x and y values.
         """
         # clear the old image (axes.hold is deprecated)
@@ -254,7 +285,15 @@ class MatplotlibCanvas(FigureCanvas) :
         self.axes.plot(x, y)
         self.axes.set_xlabel('Heat Input [kW]')
         self.axes.set_ylabel('Mass Flow Rate [kg/s]')
-#        self.axes.grid()
+        self.axes.grid(which='both',axis='both')
+
+        self.axes2.clear()
+        self.axes2.plot(z,Tbulk)
+        self.axes2.plot(z,Twall)
+        self.axes2.set_xlabel("Wall Distance [m]")
+        self.axes2.set_ylabel("Temperature [C]")
+        self.axes2.grid(which='both',axis='both')
+        
         self.draw()    
     def styleChoice(self,text):
         self.stylechoice.setText(text)

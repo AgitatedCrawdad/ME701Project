@@ -47,13 +47,13 @@ def massflow(L=1.4,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     plt.plot(heat,mass_flow)
     return heat,mass_flow
 
-def walltemp(z=0.7, L=0.7,K=5,A=0.0005,q_in=1,Tin=69.7,d=0.0254,m_dot = 0.005,Pin=0.101325):
-    z = np.linspace(0,0.7,num=100)
+def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=69.7,d=0.0254,m_dot = 0.005,Pin=0.101325):
+    z = np.linspace(0,0.7,num=1000)
     T_wall = []
     T_zplot = []
-    for i in range(100):
+    for i in range(1000):
         sc_liq_in = IAPWS97(P=0.101325, T=Tin+273.15)
-        qflux = q_in/(np.pi*d*L)
+        qflux = q_in/(np.pi*d*z[-1])
         #Saturated properties of water
         sat_liq = IAPWS97(P=0.101325, x=0)
         
@@ -83,10 +83,11 @@ def walltemp(z=0.7, L=0.7,K=5,A=0.0005,q_in=1,Tin=69.7,d=0.0254,m_dot = 0.005,Pi
         x_i = (h_in-h_sat)/Hvap
         x_z = (h_gain+h_in-h_sat)/Hvap
         
+        if T_z == Tsat:
+            x = x_z - x_i*np.exp((x_z/x_i)-1) 
+        else:
+            x = 0;
 
-#        x = x_z - x_i*np.exp((x_z/x_i)-1)
-#        print(x)
-        x=0
         Re_l = (m_dot*d)/(sat_liq.mu*A)
 
         Pr_l = sat_liq.Prandt
@@ -107,19 +108,21 @@ def walltemp(z=0.7, L=0.7,K=5,A=0.0005,q_in=1,Tin=69.7,d=0.0254,m_dot = 0.005,Pi
             
         
         
-        
+
 #        print(T_wall)
-    T_wall = np.asarray(T_wall)
-    T_zplot = np.asarray(T_zplot)
-    plt.plot(T_wall)
-    plt.plot(T_zplot)
-    plt.show()
+#    T_wall = np.asarray(T_wall)
+#    T_zplot = np.asarray(T_zplot)
+    return T_wall, T_zplot,z
+#    print(T_wall)
+#    plt.plot(T_wall)
+#    plt.plot(T_zplot)
+#    plt.show()
 #    plt.plot(T_wall-T_zplot)
     
     
-if __name__ == "__main__":
+#if __name__ == "__main__":
 #    massflow()
-    walltemp()
+#    wut = walltemp()
     
     
     

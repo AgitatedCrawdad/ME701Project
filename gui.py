@@ -51,7 +51,7 @@ class MainWindow(QMainWindow) :
         self.edit1 = QLineEdit("99")
         self.edit2 = QLineEdit("1.4")
         
-        self.edit3 = QLineEdit("5")
+        self.edit3 = QLineEdit("200")
         self.edit4 = QLineEdit("0.0005")
 
         self.edit5 = QLineEdit("0")
@@ -185,7 +185,7 @@ class MainWindow(QMainWindow) :
 #        exec(totalspan)
         self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
         
-        fraction = int(((power_in-q_in)/(q_out-q_in))*1000)
+        fraction = int(((power_in-q_in)/(q_out-q_in))*1000)-1
         
         self.Twall, self.Tbulk, self.z = walltemp(q_in = power_in, z=heated_length, m_dot = self.y[fraction])
         

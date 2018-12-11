@@ -1,7 +1,7 @@
 import sys
 import platform
 import numpy as np
-from temp import massflow, walltemp
+from temp import massflow, massflow2, massflow3, walltemp
 #import matplotlib
 #matplotlib.use('Qt5Agg')
 
@@ -51,7 +51,7 @@ class MainWindow(QMainWindow) :
         self.edit1 = QLineEdit("99")
         self.edit2 = QLineEdit("1.4")
         
-        self.edit3 = QLineEdit("200")
+        self.edit3 = QLineEdit("5")
         self.edit4 = QLineEdit("0.0005")
 
         self.edit5 = QLineEdit("0")
@@ -135,8 +135,10 @@ class MainWindow(QMainWindow) :
         layout.addLayout(hbox)
         
         
-        self.widget.setLayout(layout)        
+        self.widget.setLayout(layout)     
+        self.widget.setFixedSize(1100,850)
         self.setCentralWidget(self.widget) 
+        
     def saveas(self):
         """Save something
         
@@ -184,10 +186,12 @@ class MainWindow(QMainWindow) :
 #        
 #        exec(totalspan)
         self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
+        self.x2, self.y2= massflow2(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
+        self.x3, self.y3= massflow3(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
+        fraction = int(((power_in-q_in)/(q_out-q_in))*100)-1
         
-        fraction = int(((power_in-q_in)/(q_out-q_in))*1000)-1
-        
-        self.Twall, self.Tbulk, self.z = walltemp(q_in = power_in, z=heated_length, m_dot = self.y[fraction])
+        self.Twall,     self.Tbulk, self.x_thermo, self.x_levy, self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y[fraction])
+        self.Twall_F, self.Tbulk_F, self.x_thermo_F, self.x_levy_F, self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y3[fraction])
         
 #        fun = str(self.comboBox.currentText())
       
@@ -198,7 +202,8 @@ class MainWindow(QMainWindow) :
 #        y = x**2
 #        self.plot.draw()
         
-        self.plot.redraw(self.x,self.y, self.Twall, self.Tbulk, self.z)
+        self.plot.redraw(self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
+                         ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F)
 #        self.edit2.setText(str(self.y))
 
     def clear(self):
@@ -261,6 +266,7 @@ class MatplotlibCanvas(FigureCanvas) :
         self.fig = Figure()
         self.axes = self.fig.add_subplot(221)
         self.axes2 = self.fig.add_subplot(222)
+        self.axes3 = self.fig.add_subplot(224)
         # Give it some default plot (if desired).  
 #        x = np.arange(0.0, 3.0, 0.01)
 #        y = np.sin(2*np.pi*x)
@@ -277,22 +283,38 @@ class MatplotlibCanvas(FigureCanvas) :
         FigureCanvas.updateGeometry(self)
          
         
-    def redraw(self, x, y,Twall, Tbulk,z) :
+    def redraw(self, x, y, x2, y2, x3, y3, Twall, Tbulk, z, Twall_F, Tbulk_F, x_thermo,x_levy, x_thermo_F, x_levy_F) :
         """ Redraw the figure with new x and y values.
         """
         # clear the old image (axes.hold is deprecated)
         self.axes.clear()
         self.axes.plot(x, y)
+        self.axes.plot(x2,y2)
+        self.axes.plot(x3,y3)
         self.axes.set_xlabel('Heat Input [kW]')
         self.axes.set_ylabel('Mass Flow Rate [kg/s]')
         self.axes.grid(which='both',axis='both')
+        self.axes.legend(['Hom. 1','Hom. 2','Friedel'])
 
         self.axes2.clear()
         self.axes2.plot(z,Tbulk)
         self.axes2.plot(z,Twall)
+        self.axes2.plot(z,Tbulk_F)
+        self.axes2.plot(z,Twall_F) 
         self.axes2.set_xlabel("Wall Distance [m]")
         self.axes2.set_ylabel("Temperature [C]")
         self.axes2.grid(which='both',axis='both')
+        self.axes2.legend(['Bulk Temp.-Hom. 1','Wall Temp.-Hom. 1', 'Bulk Temp.-Friedel','Wall Temp.-Friedel'])
+        
+        self.axes3.clear()
+        self.axes3.plot(z,x_thermo)
+        self.axes3.plot(z,x_levy)
+        self.axes3.plot(z,x_thermo_F)
+        self.axes3.plot(z,x_levy_F)
+        self.axes3.set_xlabel("Wall Distance [m]")
+        self.axes3.set_ylabel('Quality')
+        self.axes3.grid(which='both',axis='both')
+        self.axes3.legend(['thermo. x-Hom. 1','Levy x-Hom. 1','thermo. x-Friedel','Levy x-Friedel'])
         
         self.draw()    
     def styleChoice(self,text):

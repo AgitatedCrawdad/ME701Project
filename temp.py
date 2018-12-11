@@ -233,6 +233,7 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
     T_zplot = []
     x_thermo = []
     x_levy = []
+    alpha_levy = []
 
     for i in range(100):
         sc_liq_in = IAPWS97(P=0.101325, T=Tin+273.15)
@@ -278,6 +279,9 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
 #            x = 0
 
         x_levy.append(x)
+        
+        alpha = 1/(1+(((1-x)/x)*(sat_vap.rho/sat_liq.rho)))
+        alpha_levy.append(alpha)
 #            x = 0
 
         Re_l = (m_dot*d)/(sat_liq.mu*A)
@@ -308,13 +312,13 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
     
 #    T_wall = np.asarray(T_wall)
 #    T_zplot = np.asarray(T_zplot)
-    plt.plot(x_thermo)
-    plt.plot(x_levy)
+#    plt.plot(x_thermo)
+#    plt.plot(x_levy)
 #    plt.plot(T_wall)
 #    plt.plot(T_zplot)
 #    plt.plot(x_plot)
 #    plt.show()
-    return T_wall, T_zplot,x_thermo,x_levy,z
+    return T_wall, T_zplot,x_thermo,x_levy,alpha_levy,z
 #    print(T_wall)
 
 #    plt.plot(T_wall-T_zplot)

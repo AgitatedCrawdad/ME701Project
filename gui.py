@@ -190,8 +190,8 @@ class MainWindow(QMainWindow) :
         self.x3, self.y3= massflow3(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
         fraction = int(((power_in-q_in)/(q_out-q_in))*100)-1
         
-        self.Twall,     self.Tbulk, self.x_thermo, self.x_levy, self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y[fraction])
-        self.Twall_F, self.Tbulk_F, self.x_thermo_F, self.x_levy_F, self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y3[fraction])
+        self.Twall,     self.Tbulk, self.x_thermo, self.x_levy, self.alpha_levy ,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y[fraction])
+        self.Twall_F, self.Tbulk_F, self.x_thermo_F, self.x_levy_F, self.alpha_levy_F,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y3[fraction])
         
 #        fun = str(self.comboBox.currentText())
       
@@ -203,7 +203,7 @@ class MainWindow(QMainWindow) :
 #        self.plot.draw()
         
         self.plot.redraw(self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
-                         ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F)
+                         ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F, self.alpha_levy, self.alpha_levy_F)
 #        self.edit2.setText(str(self.y))
 
     def clear(self):
@@ -267,6 +267,7 @@ class MatplotlibCanvas(FigureCanvas) :
         self.axes = self.fig.add_subplot(221)
         self.axes2 = self.fig.add_subplot(222)
         self.axes3 = self.fig.add_subplot(224)
+        self.axes4 = self.fig.add_subplot(223)
         # Give it some default plot (if desired).  
 #        x = np.arange(0.0, 3.0, 0.01)
 #        y = np.sin(2*np.pi*x)
@@ -283,7 +284,7 @@ class MatplotlibCanvas(FigureCanvas) :
         FigureCanvas.updateGeometry(self)
          
         
-    def redraw(self, x, y, x2, y2, x3, y3, Twall, Tbulk, z, Twall_F, Tbulk_F, x_thermo,x_levy, x_thermo_F, x_levy_F) :
+    def redraw(self, x, y, x2, y2, x3, y3, Twall, Tbulk, z, Twall_F, Tbulk_F, x_thermo,x_levy, x_thermo_F, x_levy_F, alpha_levy, alpha_levy_F):
         """ Redraw the figure with new x and y values.
         """
         # clear the old image (axes.hold is deprecated)
@@ -315,7 +316,15 @@ class MatplotlibCanvas(FigureCanvas) :
         self.axes3.set_ylabel('Quality')
         self.axes3.grid(which='both',axis='both')
         self.axes3.legend(['thermo. x-Hom. 1','Levy x-Hom. 1','thermo. x-Friedel','Levy x-Friedel'])
-        
+  
+        self.axes4.clear()
+        self.axes4.plot(z,alpha_levy)
+        self.axes4.plot(z,alpha_levy_F)
+        self.axes4.set_xlabel("Wall Distance [m]")
+        self.axes4.set_ylabel('Void Fraction')
+        self.axes4.grid(which='both',axis='both')
+        self.axes4.legend(['Levy-Hom. 1','Levy-Friedel'])
+    
         self.draw()    
     def styleChoice(self,text):
         self.stylechoice.setText(text)

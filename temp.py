@@ -3,6 +3,128 @@ from scipy import optimize
 import numpy as np
 import matplotlib.pyplot as plt
 
+def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
+#    q_dot = 1 # kW
+#    q_start = 1
+    q_end = 5
+    g = 9.81 # m/s^2
+#    L = 1.4 # m
+#    K = 5
+#    A = 0.0005 # cross sectional area m^2
+    D = 0.0254
+    #Subcooled inlet properties of water
+#    Tin = 99.7 # deg C
+#    m_dot = 0.0010
+    
+    sc_liq = IAPWS97(P=0.101325, T=Tin+273.15)
+    
+    #Saturated properties of water
+    sat_liq = IAPWS97(P=0.101325, x=0)
+    
+    #Saturated properties of vapor
+    sat_vap = IAPWS97(P=0.101325, x=1)
+    
+    Hvap = sat_vap.h-sat_liq.h #kJ/kg
+
+
+    h_in = sc_liq.h
+    h_sat = sat_liq.h
+    
+    cp = sc_liq.cp # kJ/kgK
+
+    
+    Tsat = sat_liq.T-273.15
+
+#    h_gain = ((q_dot)/m_dot)
+    
+    x_i = (h_in-h_sat)/Hvap
+    
+#    x_z = (h_gain+h_in-h_sat)/Hvap
+    
+#    x_range = np.linspace(x_i,x_z,100)
+#    x = x_range - x_i*np.exp((x_range/x_i)-1) 
+    
+#    x = lambda m_dot: (q_dot-m_dot*cp*(Tsat-Tin))/(Hvap*m_dot)
+#    x = lambda m_dot: (q_dot)/(Hvap*m_dot)
+#    x = lambda m_dot: ((q_dot/m_dot)+h_in-h_sat)/Hvap
+    x = lambda m_dot: (((q_dot)/m_dot)+h_in-h_sat)/Hvap - x_i*np.exp((((((q_dot)/m_dot)+h_in-h_sat)/Hvap)/x_i)-1)  
+    
+    Re_l = lambda m_dot: (((m_dot*D)/(A*sat_liq.mu)))
+    Re_v = lambda m_dot: (((m_dot*D)/(A*sat_vap.mu)))
+    
+    f_l = lambda m_dot: 0.079/(Re_l(m_dot)**0.25)
+    f_v = lambda m_dot: 0.079/(Re_v(m_dot)**0.25)
+
+    xtt = lambda m_dot: (((1-x(m_dot))/(x(m_dot)))**0.9)*((sat_vap.rho/sat_liq.rho)**0.5)*((sat_liq.mu/sat_vap.mu)**0.1)
+    
+    def tpm(m_dot):
+        if Re_l(m_dot)>=2300 and Re_v(m_dot)>=2300:
+            C = 20
+        elif Re_l(m_dot)<2300 and Re_v(m_dot)>=2300:
+            C = 12
+        elif Re_l(m_dot)>=2300 and Re_v(m_dot)<2300:
+            C = 10
+        else:
+            C = 5
+#        print(Re_l(m_dot))
+#        tpm = 1+(C/xtt(m_dot))+(1/(xtt(m_dot)**2))
+        if Re_l(m_dot) > 4000:
+            tpm_val = 1+(C/xtt(m_dot))+(1/(xtt(m_dot)**2))
+        else:
+            tpm_val = 1+(C*xtt(m_dot))+(xtt(m_dot)**2)
+
+        
+        return tpm_val
+        
+    alpha = lambda m_dot: 1/(1+(((1-x(m_dot))/x(m_dot))*(sat_vap.rho/sat_liq.rho)))
+    
+    rhoH = lambda m_dot: (sat_liq.rho*(1-alpha(m_dot))+sat_vap.rho*alpha(m_dot))
+#    rhoH = lambda m_dot: ((x(m_dot)/sat_vap.rho)+((1-x(m_dot))/sat_liq.rho))**(-1)
+    
+    dpdz_l = lambda m_dot: K*(2*f_l(m_dot)*(m_dot**2))/(D*(A**2)*sat_liq.rho)
+    dpdz_v = lambda m_dot: K*(2*f_v(m_dot)*(m_dot**2))/(D*(A**2)*sat_vap.rho)
+#    left = lambda m_dot: tpm(m_dot)*K*2*(0.079/(Re_l(m_dot)**0.25))*(L/D)*((m_dot**2)/(A**2))*(1/rhoH(m_dot))
+#    left = lambda m_dot: K*dpdz_l(m_dot)*(height)*tpm(m_dot)
+    
+    def left(m_dot):
+        if Re_l(m_dot) > 4000:
+            left_val = dpdz_l(m_dot)*(2*L*tpm(m_dot)+(height-L)*tpm(m_dot)+(height-L))
+        else:
+            left_val = dpdz_v(m_dot)*(2*L*tpm(m_dot)+(height-L)*tpm(m_dot)+(height-L))
+            
+        return left_val
+    
+    
+#    left = lambda m_dot: dpdz_l(m_dot)*(2*L*tpm(m_dot)+(height-L)*tpm(m_dot)+(height-L))
+#    left = lambda m_dot: (1+x(m_dot)*((sat_liq.rho/sat_vap.rho)-1))*K*(m_dot**2)/(2*sat_liq.rho*A**2)
+    
+#    right = lambda m_dot: ((sc_liq.rho-sat_liq.rho)+(sat_liq.rho-sat_vap.rho)/(1+(sat_vap.rho/sat_liq.rho)*((1-x(m_dot))/x(m_dot))))*g*L
+    right = lambda m_dot: g*(sat_liq.rho-sat_vap.rho)*((height)*alpha(m_dot))
+    
+    
+    mass_fun = lambda m_dot: left(m_dot)-right(m_dot)
+    mass_flow = []
+    heat = []
+    heats = np.linspace(q_start,q_end,100)
+    for i in range(0,100):
+        q_dot = heats[i]
+        heat.append(q_dot)
+        
+        mass_flow.append(float(optimize.fsolve(mass_fun,0.1)))
+        
+        
+#        print(left(mass_flow[i]),right(mass_flow[i]))
+        
+    plt.plot(heat,mass_flow)
+#    print(q_dot,mass_flow[-1],h_in,h_sat,Hvap)
+#    print(x(mass_flow))
+#    print(alpha(mass_flow))
+#    print(tpm(mass_flow[-1]))
+#    print(right(mass_flow))
+#    print(mass_fun(mass_flow[0]))
+    return heat,mass_flow
+
+
 def massflow3(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
 #    q_dot = 1 # kW
 #    q_start = 1
@@ -327,10 +449,11 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
 if __name__ == "__main__":
 
     
-#    wut1 = massflow()
-#    wut2 = massflow2()
+#    massflow()
+    massflow2()
 #    massflow3()
-    walltemp()
+    massflow4()
+#    walltemp()
     
     
     

@@ -1,7 +1,7 @@
 import sys
 import platform
 import numpy as np
-from temp import massflow, massflow2, massflow3, walltemp
+from temp import massflow, massflow2, massflow3, massflow4, walltemp
 #import matplotlib
 #matplotlib.use('Qt5Agg')
 
@@ -188,6 +188,7 @@ class MainWindow(QMainWindow) :
         self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
         self.x2, self.y2= massflow2(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
         self.x3, self.y3= massflow3(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
+        self.x4, self.y4= massflow4(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
         fraction = int(((power_in-q_in)/(q_out-q_in))*100)-1
         
         self.Twall,     self.Tbulk, self.x_thermo, self.x_levy, self.alpha_levy ,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y[fraction])
@@ -202,7 +203,7 @@ class MainWindow(QMainWindow) :
 #        y = x**2
 #        self.plot.draw()
         
-        self.plot.redraw(self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
+        self.plot.redraw(self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
                          ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F, self.alpha_levy, self.alpha_levy_F)
 #        self.edit2.setText(str(self.y))
 
@@ -212,47 +213,47 @@ class MainWindow(QMainWindow) :
     
 
         
-class Form(QDialog) :
-
-    def __init__(self, parent=None) :
-        super(Form, self).__init__(parent)
-        self.function_edit = QLineEdit("x**2")
-        self.function_edit.selectAll()
-        self.parameter_edit = QLineEdit("np.linspace(0,1,4)")
-        self.parameter_edit.selectAll()
-        self.output_edit = QLineEdit(" ")
-        self.output_edit.selectAll()
-        self.plot = MatplotlibCanvas()
-        layout = QVBoxLayout()
-        layout.addWidget(self.plot)
-        layout.addWidget(self.function_edit)
-        layout.addWidget(self.parameter_edit)     
-        layout.addWidget(self.output_edit)  
-        self.setLayout(layout)
-        self.function_edit.setFocus()
-        self.output_edit.returnPressed.connect(self.updateUi)
-        self.setWindowTitle("Function Evaluator")
-        self.x = None
-        self.f = None
-
-    def updateUi(self) :
-        #try : 
-            self.x = str(self.parameter_edit.text())
-            x = eval(self.x) 
-            if len(x) > 1 :
-                x = np.array(x)
-            # Is there a cleaner way?
-            f = eval(str(self.function_edit.text()))
-            self.f = str(f)
-            self.f = self.f.replace("[","").replace("]","")
-            self.f = ",".join(self.f.split())
-            self.output_edit.setText(self.f)
-            
-            self.plot.redraw(x, f)
-            #self.plot.axes.plot(x, f)
-            #self.plot.draw()
-        #except :
-        #    self.output_edit.setText("error! check function or parameter.")
+#class Form(QDialog) :
+#
+#    def __init__(self, parent=None) :
+#        super(Form, self).__init__(parent)
+#        self.function_edit = QLineEdit("x**2")
+#        self.function_edit.selectAll()
+#        self.parameter_edit = QLineEdit("np.linspace(0,1,4)")
+#        self.parameter_edit.selectAll()
+#        self.output_edit = QLineEdit(" ")
+#        self.output_edit.selectAll()
+#        self.plot = MatplotlibCanvas()
+#        layout = QVBoxLayout()
+#        layout.addWidget(self.plot)
+#        layout.addWidget(self.function_edit)
+#        layout.addWidget(self.parameter_edit)     
+#        layout.addWidget(self.output_edit)  
+#        self.setLayout(layout)
+#        self.function_edit.setFocus()
+#        self.output_edit.returnPressed.connect(self.updateUi)
+#        self.setWindowTitle("Function Evaluator")
+#        self.x = None
+#        self.f = None
+#
+#    def updateUi(self) :
+#        #try : 
+#            self.x = str(self.parameter_edit.text())
+#            x = eval(self.x) 
+#            if len(x) > 1 :
+#                x = np.array(x)
+#            # Is there a cleaner way?
+#            f = eval(str(self.function_edit.text()))
+#            self.f = str(f)
+#            self.f = self.f.replace("[","").replace("]","")
+#            self.f = ",".join(self.f.split())
+#            self.output_edit.setText(self.f)
+#            
+#            self.plot.redraw(x, f)
+#            #self.plot.axes.plot(x, f)
+#            #self.plot.draw()
+#        #except :
+#        #    self.output_edit.setText("error! check function or parameter.")
                 
 
 class MatplotlibCanvas(FigureCanvas) :
@@ -284,7 +285,8 @@ class MatplotlibCanvas(FigureCanvas) :
         FigureCanvas.updateGeometry(self)
          
         
-    def redraw(self, x, y, x2, y2, x3, y3, Twall, Tbulk, z, Twall_F, Tbulk_F, x_thermo,x_levy, x_thermo_F, x_levy_F, alpha_levy, alpha_levy_F):
+    def redraw(self, x, y, x2, y2, x3, y3, x4, y4, Twall, Tbulk, z, Twall_F, Tbulk_F, 
+               x_thermo,x_levy, x_thermo_F, x_levy_F, alpha_levy, alpha_levy_F):
         """ Redraw the figure with new x and y values.
         """
         # clear the old image (axes.hold is deprecated)
@@ -292,10 +294,11 @@ class MatplotlibCanvas(FigureCanvas) :
         self.axes.plot(x, y)
         self.axes.plot(x2,y2)
         self.axes.plot(x3,y3)
+        self.axes.plot(x4,y4)
         self.axes.set_xlabel('Heat Input [kW]')
         self.axes.set_ylabel('Mass Flow Rate [kg/s]')
         self.axes.grid(which='both',axis='both')
-        self.axes.legend(['Hom. 1','Hom. 2','Friedel'])
+        self.axes.legend(['Hom. 1','Hom. 2','Friedel','Lockhart & Martinelli'])
 
         self.axes2.clear()
         self.axes2.plot(z,Tbulk)

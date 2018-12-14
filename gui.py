@@ -52,13 +52,15 @@ class MainWindow(QMainWindow) :
         self.edit2 = QLineEdit("1.4")
         
         self.edit3 = QLineEdit("5")
-        self.edit4 = QLineEdit("0.0005")
+        self.edit4 = QLineEdit("0.0254")
 
         self.edit5 = QLineEdit("0")
         self.edit6 = QLineEdit("5")
         
         self.edit7 = QLineEdit("0.7")
         self.edit8 = QLineEdit("3")
+        
+        self.edit9 = QLineEdit("0.101325")
         
         self.runbutton = QPushButton("Run")
         self.cancelbutton = QPushButton("Clear")
@@ -79,7 +81,7 @@ class MainWindow(QMainWindow) :
         label = QLabel("Loss Coefficient []:",self)
         hbox2.addWidget(label)
         hbox2.addWidget(self.edit3)
-        label = QLabel("Flow Area [m^2]:",self)
+        label = QLabel("Flow Diameter [m]:",self)
         hbox2.addWidget(label)
         hbox2.addWidget(self.edit4)
         
@@ -103,7 +105,12 @@ class MainWindow(QMainWindow) :
         label = QLabel("Heat in [kW]:",self)
         hbox5.addWidget(label)
         hbox5.addWidget(self.edit8)
-        
+  
+        hbox6 = QHBoxLayout()
+        label = QLabel("Operating Pressure [MPa]:",self)
+        hbox6.addWidget(label)
+        hbox6.addWidget(self.edit9)
+    
         
         hbox = QHBoxLayout()
         hbox.addWidget(self.runbutton)
@@ -131,6 +138,7 @@ class MainWindow(QMainWindow) :
         layout.addLayout(hbox3)
         layout.addLayout(hbox4)
         layout.addLayout(hbox5)
+        layout.addLayout(hbox6)
         
         layout.addLayout(hbox)
         
@@ -173,11 +181,12 @@ class MainWindow(QMainWindow) :
         Temp_in = float(self.edit1.text())
         Length = float(self.edit2.text())
         K_loss = float(self.edit3.text())
-        Area = float(self.edit4.text())
+        Diam = float(self.edit4.text())
         q_in = float(self.edit5.text())
         q_out = float(self.edit6.text())
         heated_length = float(self.edit7.text())
         power_in = float(self.edit8.text())
+        press = float(self.edit9.text())
 #        var = 'self.x='
 #        if span[0].isdigit():
 #            totalspan = var+'np.array(['+span+'])'
@@ -185,14 +194,15 @@ class MainWindow(QMainWindow) :
 #            totalspan = var+span
 #        
 #        exec(totalspan)
-        self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
-        self.x2, self.y2= massflow2(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
-        self.x3, self.y3= massflow3(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
-        self.x4, self.y4= massflow4(Tin=Temp_in,L=Length,K=K_loss,A=Area,q_start=q_in,q_end=q_out)
+        self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
+        self.x2, self.y2= massflow2(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
+        self.x3, self.y3= massflow3(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
+        self.x4, self.y4= massflow4(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
         fraction = int(((power_in-q_in)/(q_out-q_in))*100)-1
         
         self.Twall,     self.Tbulk, self.x_thermo, self.x_levy, self.alpha_levy ,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y[fraction])
         self.Twall_F, self.Tbulk_F, self.x_thermo_F, self.x_levy_F, self.alpha_levy_F,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y3[fraction])
+        self.Twall_M, self.Tbulk_M, self.x_thermo_M, self.x_levy_M, self.alpha_levy_M,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y4[fraction])
         
 #        fun = str(self.comboBox.currentText())
       
@@ -204,7 +214,7 @@ class MainWindow(QMainWindow) :
 #        self.plot.draw()
         
         self.plot.redraw(self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
-                         ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F, self.alpha_levy, self.alpha_levy_F)
+                         ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F, self.alpha_levy, self.alpha_levy_F, self.alpha_levy_M)
 #        self.edit2.setText(str(self.y))
 
     def clear(self):
@@ -286,47 +296,52 @@ class MatplotlibCanvas(FigureCanvas) :
          
         
     def redraw(self, x, y, x2, y2, x3, y3, x4, y4, Twall, Tbulk, z, Twall_F, Tbulk_F, 
-               x_thermo,x_levy, x_thermo_F, x_levy_F, alpha_levy, alpha_levy_F):
+               x_thermo,x_levy, x_thermo_F, x_levy_F, alpha_levy, alpha_levy_F, alpha_levy_M):
         """ Redraw the figure with new x and y values.
         """
         # clear the old image (axes.hold is deprecated)
         self.axes.clear()
-        self.axes.plot(x, y)
-        self.axes.plot(x2,y2)
-        self.axes.plot(x3,y3)
-        self.axes.plot(x4,y4)
+        self.axes.plot(x, y,'c')
+        self.axes.plot(x2,y2,'k')
+        self.axes.plot(x3,y3,'g')
+        self.axes.plot(x4,y4,'r')
         self.axes.set_xlabel('Heat Input [kW]')
         self.axes.set_ylabel('Mass Flow Rate [kg/s]')
         self.axes.grid(which='both',axis='both')
         self.axes.legend(['Hom. 1','Hom. 2','Friedel','Lockhart & Martinelli'])
 
         self.axes2.clear()
-        self.axes2.plot(z,Tbulk)
-        self.axes2.plot(z,Twall)
-        self.axes2.plot(z,Tbulk_F)
-        self.axes2.plot(z,Twall_F) 
+        self.axes2.plot(z,Tbulk,'b')
+        self.axes2.plot(z,Twall,'r--')
+        self.axes2.plot(z,Tbulk_F,'r')
+        self.axes2.plot(z,Twall_F,'b--') 
         self.axes2.set_xlabel("Wall Distance [m]")
         self.axes2.set_ylabel("Temperature [C]")
+        self.axes2.yaxis.set_label_position("right")
+        self.axes2.yaxis.tick_right()
         self.axes2.grid(which='both',axis='both')
         self.axes2.legend(['Bulk Temp.-Hom. 1','Wall Temp.-Hom. 1', 'Bulk Temp.-Friedel','Wall Temp.-Friedel'])
         
         self.axes3.clear()
-        self.axes3.plot(z,x_thermo)
-        self.axes3.plot(z,x_levy)
-        self.axes3.plot(z,x_thermo_F)
-        self.axes3.plot(z,x_levy_F)
+        self.axes3.plot(z,x_thermo,'r')
+        self.axes3.plot(z,x_levy,'r--')
+        self.axes3.plot(z,x_thermo_F,'b')
+        self.axes3.plot(z,x_levy_F,'b--')
         self.axes3.set_xlabel("Wall Distance [m]")
         self.axes3.set_ylabel('Quality')
+        self.axes3.yaxis.set_label_position("right")
+        self.axes3.yaxis.tick_right()
         self.axes3.grid(which='both',axis='both')
         self.axes3.legend(['thermo. x-Hom. 1','Levy x-Hom. 1','thermo. x-Friedel','Levy x-Friedel'])
   
         self.axes4.clear()
-        self.axes4.plot(z,alpha_levy)
-        self.axes4.plot(z,alpha_levy_F)
+        self.axes4.plot(z,alpha_levy,'c')
+        self.axes4.plot(z,alpha_levy_F,'g')
+        self.axes4.plot(z,alpha_levy_M,'r')        
         self.axes4.set_xlabel("Wall Distance [m]")
         self.axes4.set_ylabel('Void Fraction')
         self.axes4.grid(which='both',axis='both')
-        self.axes4.legend(['Levy-Hom. 1','Levy-Friedel'])
+        self.axes4.legend(['Levy-Hom. 1','Levy-Friedel','Levy-Lockhart & Martinelli'])
     
         self.draw()    
     def styleChoice(self,text):

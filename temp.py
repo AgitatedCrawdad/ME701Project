@@ -3,9 +3,10 @@ from scipy import optimize
 import numpy as np
 import matplotlib.pyplot as plt
 
-def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
+def massflow4(height=1.4,L=0.7,K=5,d=0.0254,q_start=0,q_end=5,Tin=99.7,Pin=0.101325):
 #    q_dot = 1 # kW
 #    q_start = 1
+    A = np.pi*(d/2)**2
     q_end = 5
     g = 9.81 # m/s^2
 #    L = 1.4 # m
@@ -16,13 +17,13 @@ def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
 #    Tin = 99.7 # deg C
 #    m_dot = 0.0010
     
-    sc_liq = IAPWS97(P=0.101325, T=Tin+273.15)
+    sc_liq = IAPWS97(P=Pin, T=Tin+273.15)
     
     #Saturated properties of water
-    sat_liq = IAPWS97(P=0.101325, x=0)
+    sat_liq = IAPWS97(P=Pin, x=0)
     
     #Saturated properties of vapor
-    sat_vap = IAPWS97(P=0.101325, x=1)
+    sat_vap = IAPWS97(P=Pin, x=1)
     
     Hvap = sat_vap.h-sat_liq.h #kJ/kg
 
@@ -30,10 +31,6 @@ def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     h_in = sc_liq.h
     h_sat = sat_liq.h
     
-    cp = sc_liq.cp # kJ/kgK
-
-    
-    Tsat = sat_liq.T-273.15
 
 #    h_gain = ((q_dot)/m_dot)
     
@@ -49,8 +46,8 @@ def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
 #    x = lambda m_dot: ((q_dot/m_dot)+h_in-h_sat)/Hvap
     x = lambda m_dot: (((q_dot)/m_dot)+h_in-h_sat)/Hvap - x_i*np.exp((((((q_dot)/m_dot)+h_in-h_sat)/Hvap)/x_i)-1)  
     
-    Re_l = lambda m_dot: (((m_dot*D)/(A*sat_liq.mu)))
-    Re_v = lambda m_dot: (((m_dot*D)/(A*sat_vap.mu)))
+    Re_l = lambda m_dot: (((m_dot*d)/(A*sat_liq.mu)))
+    Re_v = lambda m_dot: (((m_dot*d)/(A*sat_vap.mu)))
     
     f_l = lambda m_dot: 0.079/(Re_l(m_dot)**0.25)
     f_v = lambda m_dot: 0.079/(Re_v(m_dot)**0.25)
@@ -81,8 +78,8 @@ def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     rhoH = lambda m_dot: (sat_liq.rho*(1-alpha(m_dot))+sat_vap.rho*alpha(m_dot))
 #    rhoH = lambda m_dot: ((x(m_dot)/sat_vap.rho)+((1-x(m_dot))/sat_liq.rho))**(-1)
     
-    dpdz_l = lambda m_dot: K*(2*f_l(m_dot)*(m_dot**2))/(D*(A**2)*sat_liq.rho)
-    dpdz_v = lambda m_dot: K*(2*f_v(m_dot)*(m_dot**2))/(D*(A**2)*sat_vap.rho)
+    dpdz_l = lambda m_dot: K*(2*f_l(m_dot)*(m_dot**2))/(d*(A**2)*sat_liq.rho)
+    dpdz_v = lambda m_dot: K*(2*f_v(m_dot)*(m_dot**2))/(d*(A**2)*sat_vap.rho)
 #    left = lambda m_dot: tpm(m_dot)*K*2*(0.079/(Re_l(m_dot)**0.25))*(L/D)*((m_dot**2)/(A**2))*(1/rhoH(m_dot))
 #    left = lambda m_dot: K*dpdz_l(m_dot)*(height)*tpm(m_dot)
     
@@ -110,8 +107,10 @@ def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
         q_dot = heats[i]
         heat.append(q_dot)
         
-        mass_flow.append(float(optimize.fsolve(mass_fun,0.1)))
-        
+        if i <5:
+            mass_flow.append(float(optimize.fsolve(mass_fun,0.1)))
+        else:
+            mass_flow.append(float(optimize.fsolve(mass_fun,mass_flow[-1])))      
         
 #        print(left(mass_flow[i]),right(mass_flow[i]))
         
@@ -125,9 +124,10 @@ def massflow4(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     return heat,mass_flow
 
 
-def massflow3(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
+def massflow3(height=1.4,L=0.7,K=5,d=0.0254,q_start=0,q_end=5,Tin=99.7,Pin=0.101325):
 #    q_dot = 1 # kW
 #    q_start = 1
+    A = np.pi*(d/2)**2
     q_end = 5
     g = 9.81 # m/s^2
 #    L = 1.4 # m
@@ -138,13 +138,13 @@ def massflow3(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
 #    Tin = 99.7 # deg C
 #    m_dot = 0.0010
     
-    sc_liq = IAPWS97(P=0.101325, T=Tin+273.15)
+    sc_liq = IAPWS97(P=Pin, T=Tin+273.15)
     
     #Saturated properties of water
-    sat_liq = IAPWS97(P=0.101325, x=0)
+    sat_liq = IAPWS97(P=Pin, x=0)
     
     #Saturated properties of vapor
-    sat_vap = IAPWS97(P=0.101325, x=1)
+    sat_vap = IAPWS97(P=Pin, x=1)
     
     Hvap = sat_vap.h-sat_liq.h #kJ/kg
 
@@ -152,10 +152,6 @@ def massflow3(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     h_in = sc_liq.h
     h_sat = sat_liq.h
     
-    cp = sc_liq.cp # kJ/kgK
-
-    
-    Tsat = sat_liq.T-273.15
 
 #    h_gain = ((q_dot)/m_dot)
     
@@ -212,8 +208,11 @@ def massflow3(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     for i in range(0,100):
         q_dot = heats[i]
         heat.append(q_dot)
+        if i <5:
+            mass_flow.append(float(optimize.fsolve(mass_fun,0.01)))
+        else:
+            mass_flow.append(float(optimize.fsolve(mass_fun,mass_flow[-1])))
         
-        mass_flow.append(float(optimize.fsolve(mass_fun,0.01)))
         
         
 #        print(left(mass_flow[i]),right(mass_flow[i]))
@@ -228,9 +227,9 @@ def massflow3(height=1.4,L=0.7,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     return heat,mass_flow
 
 
-def massflow2(L=1.4,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
+def massflow2(L=1.4,K=5,d=0.0254,q_start=0,q_end=5,Tin=99.7,Pin=0.101325):
 #    q_dot = 1 # kW
-
+    A = np.pi*(d/2)**2
     g = 9.81 # m/s^2
 #    L = 1.4 # m
 #    K = 5
@@ -240,32 +239,22 @@ def massflow2(L=1.4,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
 #    Tin = 99.4 # deg C
 #    m_dot = 0.0010
     
-    sc_liq = IAPWS97(P=0.101325, T=Tin+273.15)
+    sc_liq = IAPWS97(P=Pin, T=Tin+273.15)
     
     #Saturated properties of water
-    sat_liq = IAPWS97(P=0.101325, x=0)
+    sat_liq = IAPWS97(P=Pin, x=0)
     
     #Saturated properties of vapor
-    sat_vap = IAPWS97(P=0.101325, x=1)
+    sat_vap = IAPWS97(P=Pin, x=1)
     
     Hvap = sat_vap.h-sat_liq.h #kJ/kg
-    cp = sc_liq.cp # kJ/kgK
-
-    
-    Tsat = sat_liq.T-273.15
     h_in = sc_liq.h
     h_sat = sat_liq.h
-#    h_gain = ((q_dot)/m_dot)
     
     x_i = (h_in-h_sat)/Hvap
     
-#    x_z = (h_gain+h_in-h_sat)/Hvap
-        
-#    x = x_z - x_i*np.exp((x_z/x_i)-1) 
     
-    #x = lambda m_dot: (q_dot)/(Hvap*m_dot)
     x = lambda m_dot: (((q_dot)/m_dot)+h_in-h_sat)/Hvap - x_i*np.exp((((((q_dot)/m_dot)+h_in-h_sat)/Hvap)/x_i)-1)  
-#    x = lambda m_dot: (q_dot-m_dot*cp*(Tsat-Tin))/(Hvap*m_dot)
 
     
     alpha = lambda m_dot: 1/(1+(((1-x(m_dot))/x(m_dot))*(sat_vap.rho/sat_liq.rho)))
@@ -285,47 +274,31 @@ def massflow2(L=1.4,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     for i in range(0,100):
         q_dot = heats[i]
         heat.append(q_dot)
-        
-        mass_flow.append(float(optimize.fsolve(mass_fun,0.01)))
-#        print(left(mass_flow[i]),right(mass_flow[i]))
-#        print(x(mass_flow[i]))
-        
+
+        if i <5:
+            mass_flow.append(float(optimize.fsolve(mass_fun,0.01)))
+        else:
+            mass_flow.append(float(optimize.fsolve(mass_fun,mass_flow[-1])))
+
     plt.plot(heat,mass_flow)
-#    print(q_dot,mass_flow[-1],h_in,h_sat,Hvap)
-#    print(x(0.005))
-#    print(alpha(x(0.005)))
-#    print(left(mass_flow[-1]),right(mass_flow[-1]))
-#    print(Re(mass_flow[-1]),rhoH(mass_flow[-1]))
     return heat,mass_flow
 
 
-def massflow(L=1.4,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
-#q_dot = 1 # kW
-#    q_start = 1
-#    q_end = 2.7
+def massflow(L=1.4,K=5,d=0.0005,q_start=0,q_end=5,Tin=99.7,Pin=0.101325):
     g = 9.81 # m/s^2
-#    L = 1.4 # m
-#    K = 5
-#    A = 0.0005 # cross sectional area m^2
-    
-    #Subcooled inlet properties of water
-#    Tin = 99.4 # deg C
-    
-    sc_liq = IAPWS97(P=0.101325, T=Tin+273.15)
+    A = np.pi*(d/2)**2
+    sc_liq = IAPWS97(P=Pin, T=Tin+273.15)
     
     #Saturated properties of water
-    sat_liq = IAPWS97(P=0.101325, x=0)
+    sat_liq = IAPWS97(P=Pin, x=0)
     
     #Saturated properties of vapor
-    sat_vap = IAPWS97(P=0.101325, x=1)
+    sat_vap = IAPWS97(P=Pin, x=1)
     
     Hvap = sat_vap.h-sat_liq.h #kJ/kg
-    cp = sc_liq.cp # kJ/kgK
     
-    Tsat = sat_liq.T-273.15
     h_in = sc_liq.h
     h_sat = sat_liq.h
-#    h_gain = ((q_dot)/m_dot)
     
     x_i = (h_in-h_sat)/Hvap
     
@@ -344,32 +317,36 @@ def massflow(L=1.4,K=5,A=0.0005,q_start=0,q_end=5,Tin=99.7):
     for i in range(0,100):
         q_dot = heats[i]
         heat.append(q_dot)
-        mass_flow.append(float(optimize.fsolve(mass_fun,0.001)))
-        
+
+        if i <5:
+            mass_flow.append(float(optimize.fsolve(mass_fun,0.01)))
+        else:
+            mass_flow.append(float(optimize.fsolve(mass_fun,mass_flow[-1])))
+            
     plt.plot(heat,mass_flow)
     return heat,mass_flow
 
-def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.101325):
+def walltemp(z=0.7,K=5,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.101325):
     z = np.linspace(0,z,num=100)
     T_wall = []
     T_zplot = []
     x_thermo = []
     x_levy = []
     alpha_levy = []
+    A = np.pi*(d/2)**2
 
     for i in range(100):
-        sc_liq_in = IAPWS97(P=0.101325, T=Tin+273.15)
+        sc_liq_in = IAPWS97(P=Pin, T=Tin+273.15)
         qflux = (q_in)/(np.pi*d*z[-1])
         
         #Saturated properties of water
-        sat_liq = IAPWS97(P=0.101325, x=0)
+        sat_liq = IAPWS97(P=Pin, x=0)
         
         #Saturated properties of vapor
-        sat_vap = IAPWS97(P=0.101325, x=1)
+        sat_vap = IAPWS97(P=Pin, x=1)
         
         Hvap = sat_vap.h-sat_liq.h #kJ/kg
         cp = sat_liq.cp # kJ/kgK
-#        print(cp)
         Tsat = sat_liq.T-273.15    
         
         M = 18 #Molecular weight
@@ -378,7 +355,7 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
         Pstar = (Pin*10)/Pcrit
         
         T_z = ((qflux)*np.pi*d*z[i])/(m_dot*cp)+Tin
-#        print(T_z)
+
         if T_z > Tsat:
             T_z = Tsat
             
@@ -386,7 +363,6 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
         h_in = sc_liq_in.h
         h_sat = sat_liq.h
         h_gain = ((qflux)*np.pi*d*z[i])/m_dot;
-#        print(h_gain)
 
         x_i = (h_in-h_sat)/Hvap
 
@@ -394,17 +370,11 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
         
         x_thermo.append(x_z)
         x = x_z - x_i*np.exp((x_z/x_i)-1) 
-#        if T_z == Tsat:
-#            x = x_z - x_i*np.exp((x_z/x_i)-1) 
-
-#        else:
-#            x = 0
 
         x_levy.append(x)
         
         alpha = 1/(1+(((1-x)/x)*(sat_vap.rho/sat_liq.rho)))
         alpha_levy.append(alpha)
-#            x = 0
 
         Re_l = (m_dot*d)/(sat_liq.mu*A)
 
@@ -414,46 +384,33 @@ def walltemp(z=0.7,K=5,A=0.0005,q_in=2,Tin=90.7,d=0.0254,m_dot = 0.01,Pin=0.1013
         
         
         h_pool = 55 * (Pstar**(0.12))*((qflux)**(0.6667))*((-np.log10(Pstar))**(-0.55))*M**(-0.5)
-#        print(h_l,h_pool)
+
         F = (1+x*Pr_l*((sat_liq.rho/sat_vap.rho)-1))**(0.35)
         S = (1+0.055*F**(0.1)*Re_l**(0.16))**(-1)
         
         T = lambda T_w: (qflux-(((F*h_l*(T_w-T_z))**2)+((S*h_pool*(T_w-Tsat))**2))**(0.5))
-#        Abp = (F*h_l)/(S*h_pool)
-#        Aqp = qflux/(S*h_pool*(Tsat-T_z))
-        
-#        T = lambda T_w: ((Tsat-T_z)/(1+Abp**2))*(1+(1+(1+Abp**2)*(Aqp**2-1))**0.5)+T_z-T_w
-        
+      
         if T_z != Tsat:
             T_wall.append(float(optimize.fsolve(T,70)))
         else:
             htp = (((F*h_l)**2)+((S*h_pool)**2))**(0.5)
             T_wall.append((qflux/htp)+Tsat)
-#        print(T_z,T_wall[-1])
+
         
     
-#    T_wall = np.asarray(T_wall)
-#    T_zplot = np.asarray(T_zplot)
-#    plt.plot(x_thermo)
-#    plt.plot(x_levy)
-#    plt.plot(T_wall)
-#    plt.plot(T_zplot)
-#    plt.plot(x_plot)
-#    plt.show()
-    return T_wall, T_zplot,x_thermo,x_levy,alpha_levy,z
-#    print(T_wall)
 
-#    plt.plot(T_wall-T_zplot)
+    return T_wall, T_zplot,x_thermo,x_levy,alpha_levy,z
+
     
     
 if __name__ == "__main__":
 
     
-#    massflow()
+    massflow()
     massflow2()
-#    massflow3()
+    massflow3()
     massflow4()
-#    walltemp()
+    walltemp()
     
     
     

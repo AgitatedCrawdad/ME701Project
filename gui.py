@@ -114,24 +114,15 @@ class MainWindow(QMainWindow) :
         
         hbox = QHBoxLayout()
         hbox.addWidget(self.runbutton)
-#        hbox.addWidget(self.cancelbutton)
-        # signals + slots ()
         
         self.runbutton.clicked.connect(self.update)
-#        self.cancelbutton.clicked.connect(self.clear)
         self.edit1.returnPressed.connect(self.update)
-        
-#        self.comboBox = QComboBox(self)
-#        self.comboBox.addItems(['x**(1/2)','x**2','np.sin(x)',''])
-#        self.comboBox.setEditable(True)
-        
+       
 
         layout = QVBoxLayout()
         
         layout.addWidget(self.plot)
-#        layout.addWidget(self.comboBox)
-#        layout.addWidget(self.edit1)
-#        layout.addWidget(self.edit2) 
+
         layout.addLayout(hbox0)
         layout.addLayout(hbox1)
         layout.addLayout(hbox2)
@@ -154,18 +145,13 @@ class MainWindow(QMainWindow) :
         """
         name = QFileDialog.getSaveFileName(self, 'Save File')
         tempstr = name[0].split('/')
-#        print(str(tempstr)c)
-        np.savetxt(str(tempstr[-1]),np.c_[self.x,self.y])
-#        file = open(str(tempstr[-1]),'w')
-##        text = self.textEdit.toPlainText()
-#        file.write(str(self.x.T))
-#        file.close()
+        np.savetxt(str(tempstr[-1]),np.c_[self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
+                         ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F, self.alpha_levy, self.alpha_levy_F, self.alpha_levy_M])
                 
     def about(self):
         QMessageBox.about(self, 
-            "About Function Evaluator",
-            """<b>Function Evaluator</b>
-               <p>Copyright &copy; 2016 Jeremy Roberts, All Rights Reserved.
+            "Two-Phase Flow Models",
+            """<b>Two-Phase Flow Models</b>
                <p>Python %s -- Qt %s -- PyQt %s on %s""" %
             (platform.python_version(),
              QT_VERSION_STR, PYQT_VERSION_STR, platform.system()))
@@ -176,8 +162,6 @@ class MainWindow(QMainWindow) :
         Of course, this is trivial(ish), but it serves as a guid for how
         to update other parts of the figure (see the reference for more).
         """
-#        title = str(self.edit1.text())
-#        self.plot.axes.set_title(title)
         Temp_in = float(self.edit1.text())
         Length = float(self.edit2.text())
         K_loss = float(self.edit3.text())
@@ -187,13 +171,6 @@ class MainWindow(QMainWindow) :
         heated_length = float(self.edit7.text())
         power_in = float(self.edit8.text())
         press = float(self.edit9.text())
-#        var = 'self.x='
-#        if span[0].isdigit():
-#            totalspan = var+'np.array(['+span+'])'
-#        else:
-#            totalspan = var+span
-#        
-#        exec(totalspan)
         self.x, self.y = massflow(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
         self.x2, self.y2= massflow2(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
         self.x3, self.y3= massflow3(Tin=Temp_in,L=Length,K=K_loss,d=Diam,q_start=q_in,q_end=q_out,Pin=press)
@@ -204,18 +181,9 @@ class MainWindow(QMainWindow) :
         self.Twall_F, self.Tbulk_F, self.x_thermo_F, self.x_levy_F, self.alpha_levy_F,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y3[fraction])
         self.Twall_M, self.Tbulk_M, self.x_thermo_M, self.x_levy_M, self.alpha_levy_M,self.z = walltemp(Tin=Temp_in, q_in = power_in, z=heated_length, m_dot = self.y4[fraction])
         
-#        fun = str(self.comboBox.currentText())
-      
-#        fun = fun.replace('x','self.x')
-        
-#        self.y = eval(fun)
-#        x = np.linspace(0,10)
-#        y = x**2
-#        self.plot.draw()
         
         self.plot.redraw(self.x,self.y, self.x2, self.y2, self.x3, self.y3, self.x4, self.y4, self.Twall, self.Tbulk, self.z, self.Twall_F, self.Tbulk_F
                          ,self.x_thermo, self.x_levy,self.x_thermo_F, self.x_levy_F, self.alpha_levy, self.alpha_levy_F, self.alpha_levy_M)
-#        self.edit2.setText(str(self.y))
 
     def clear(self):
         self.plot.redraw(0,0)
@@ -223,48 +191,6 @@ class MainWindow(QMainWindow) :
     
 
         
-#class Form(QDialog) :
-#
-#    def __init__(self, parent=None) :
-#        super(Form, self).__init__(parent)
-#        self.function_edit = QLineEdit("x**2")
-#        self.function_edit.selectAll()
-#        self.parameter_edit = QLineEdit("np.linspace(0,1,4)")
-#        self.parameter_edit.selectAll()
-#        self.output_edit = QLineEdit(" ")
-#        self.output_edit.selectAll()
-#        self.plot = MatplotlibCanvas()
-#        layout = QVBoxLayout()
-#        layout.addWidget(self.plot)
-#        layout.addWidget(self.function_edit)
-#        layout.addWidget(self.parameter_edit)     
-#        layout.addWidget(self.output_edit)  
-#        self.setLayout(layout)
-#        self.function_edit.setFocus()
-#        self.output_edit.returnPressed.connect(self.updateUi)
-#        self.setWindowTitle("Function Evaluator")
-#        self.x = None
-#        self.f = None
-#
-#    def updateUi(self) :
-#        #try : 
-#            self.x = str(self.parameter_edit.text())
-#            x = eval(self.x) 
-#            if len(x) > 1 :
-#                x = np.array(x)
-#            # Is there a cleaner way?
-#            f = eval(str(self.function_edit.text()))
-#            self.f = str(f)
-#            self.f = self.f.replace("[","").replace("]","")
-#            self.f = ",".join(self.f.split())
-#            self.output_edit.setText(self.f)
-#            
-#            self.plot.redraw(x, f)
-#            #self.plot.axes.plot(x, f)
-#            #self.plot.draw()
-#        #except :
-#        #    self.output_edit.setText("error! check function or parameter.")
-                
 
 class MatplotlibCanvas(FigureCanvas) :
     """ This is borrowed heavily from the matplotlib documentation;
@@ -279,16 +205,9 @@ class MatplotlibCanvas(FigureCanvas) :
         self.axes2 = self.fig.add_subplot(222)
         self.axes3 = self.fig.add_subplot(224)
         self.axes4 = self.fig.add_subplot(223)
-        # Give it some default plot (if desired).  
-#        x = np.arange(0.0, 3.0, 0.01)
-#        y = np.sin(2*np.pi*x)
-#        self.axes.plot(x, y)
-#        self.axes.set_xlabel('Heat Input [kW]')
-#        self.axes.set_ylabel('Mass Flow Rate [kg/s]')   
         
         # Now do the initialization of the super class
         FigureCanvas.__init__(self, self.fig)
-        #self.setParent(parent)
         FigureCanvas.setSizePolicy(self,
                                    QSizePolicy.Expanding,
                                    QSizePolicy.Expanding)
